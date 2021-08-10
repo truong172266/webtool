@@ -1,4 +1,4 @@
-import {Card, DataTable, Paragraph, Surface, Switch,  Title,TextInput,} from "react-native-paper";
+import {Card, DataTable, Paragraph, Surface, Switch,  Title,TextInput,ProgressBar, Colors} from "react-native-paper";
 import styles from "./styles";
 import {Button, View, FlatList, Text, Alert, Clipboard,TouchableOpacity} from "react-native";
 import * as React from "react";
@@ -19,6 +19,7 @@ class SmallInfo extends User{
             auto_comment:false,
             friend_bool:false,
             auto_care_nick:false,
+            action:false,
             data :
                 {
                     selected : 1,
@@ -35,37 +36,58 @@ class SmallInfo extends User{
         }
 
     }
-    async pushAction(){
-        await Firebase.update(`action`,
-            `${this.props.start}`,
-            {
-                selected : 1,
-                facebook: this.props.facebook,
-                password:this.props.password,
-                key:this.props.start,
-                cookie:this.props.cookie,
-                like:this.state.data.like,
-                react:this.state.data.react,
-                answer:this.state.data.answer,
-                comment:this.state.data.comment,
-                friend:this.state.data.friend,
-                care_nick:this.state.data.care_nick,
-            }
-            )
-        // if (this.state.auto_like === true){
-        //     await fetch(' https://graph.facebook.com/v10.0/'+ this.state.data.like+'/likes?access_token='+ this.props.cookie+'&method=post')
-        // }
+    pushAction(){
+         if (this.props.cookie !== ""){
+             this.setState({action:true},
+                 async ()=>{
+                     await Firebase.update(`action`,
+                         `${this.props.start}`,
+                         {
+                             selected : 1,
+                             facebook: this.props.facebook,
+                             password:this.props.password,
+                             key:this.props.start,
+                             cookie:this.props.cookie,
+                             like:this.state.data.like,
+                             react:this.state.data.react,
+                             answer:this.state.data.answer,
+                             comment:this.state.data.comment,
+                             friend:this.state.data.friend,
+                             care_nick:this.state.data.care_nick,
+                         }
+                     )
 
-        if (this.state.auto_comment === true){
-            var arr = this.state.data.comment.content.split(',')
-            setTimeout(() => {
-                for (var index =0;index<arr.length;index ++){
-                    fetch(' https://graph.facebook.com/v10.0/'+ this.state.data.comment.id+'/comments?message='+arr[index]+'&access_token='+ this.props.cookie+'&method=post')
-                }
 
-            }, Math.random()*2000);
+                     setTimeout(() => {
+                             try {
+                                 var arr = this.state.data.comment.content.split(',')
+                                 if (this.state.auto_comment === true) {
+                                     for (var index = 0; index < arr.length; index++) {
+                                         fetch('https://graph.facebook.com/v2.3/' + this.state.data.comment.id + '/comments?message=' + arr[index] + '&access_token=' + this.props.cookie + '&method=post')
+                                     }
+                                 }
+                             }
+                             catch(e){}
+                         }
+                         , Math.random()*2000);
+                     setTimeout(() => {
+                             try{
+                                 if (this.state.auto_like === true){
+                                     fetch('https://graph.facebook.com/v2.3/'+ this.state.data.like+'/likes?access_token='+ this.props.cookie+'&method=post')
+                                 }
+                             }
+                             catch(e){}
+                         }
+                         , Math.random()*2000);
+                     await alert('Success')
+                 }
+             )
 
-        }
+
+         }
+         else {
+             alert("user này thiếu tooken");
+         }
     }
     copy (value){
         Clipboard.setString(value);
@@ -91,11 +113,11 @@ class SmallInfo extends User{
                         </TouchableOpacity>
                     </DataTable.Cell>
                     <DataTable.Cell style={styles.textContentFlatlist}>
-                        <TouchableOpacity
+                        {this.props.cookie !== "" ? <TouchableOpacity
                             onPress={() => this.copy(`${this.props.cookie}`)}
                         >
                             <AntDesign name={'copy1'} size={15}/>
-                        </TouchableOpacity>
+                        </TouchableOpacity> : <Text>null</Text>}
                     </DataTable.Cell>
                     <DataTable.Cell style={styles.textContentFlatlist}>
                         <Switch
@@ -107,11 +129,12 @@ class SmallInfo extends User{
                                         // var like = prompt("Tool cho biết", "like,https://www.facebook.com/ieltsilgt/photos/a.114187730182504/320427316225210/").toString()
                                         var like = prompt("Tool cho biết", "id_link").toString()
                                         var res = like.split('_')
+                                        var c =Number.isInteger(parseInt(like))
                                         var a =Number.isInteger(parseInt(res[0]))
                                         var b =Number.isInteger(parseInt(res[1]))
 
                                         // if(like !== ''&& (like.includes("www.") || like.includes("https://") ||  like.includes("http://"))){
-                                        if( a &&b ){
+                                        if(( a &&b) || c){
                                             this.setState({auto_like : !this.state.auto_like})
                                             this.setState(function (prevState){
                                                 prevState.data = {
@@ -164,7 +187,7 @@ class SmallInfo extends User{
                                             alert("Hãy nhập một trong bốn chữ cái : like, tim, haha, thương thương, và địa chỉ chứa https:// or http:// or www.");
                                         }
 
-                                        value = 172;
+                                        value = 172;li
 
                                     }
 
@@ -225,8 +248,8 @@ class SmallInfo extends User{
                                         var res1 = res[1].split('_')
                                         var a =Number.isInteger(parseInt(res1[0]))
                                         var b =Number.isInteger(parseInt(res1[1]))
-
-                                        if(a && b){
+                                        var c = Number.isInteger(parseInt(res[1]))
+                                        if((a && b) || c ){
                                             this.setState({auto_comment : !this.state.auto_comment})
                                             this.setState((prevState)=>{
                                                     prevState.data = {
@@ -234,6 +257,7 @@ class SmallInfo extends User{
                                                         comment: {id : res[1],content:res[0]} ,
                                                     }
                                             })
+
                                         }
                                         else {
                                             alert("Độ văn bản lớn hơn hoặc bằng 1 từ và chứa id là một số và đồng thời cách nhau bởi &")
@@ -242,6 +266,7 @@ class SmallInfo extends User{
                                     } else {
                                         this.setState({auto_comment: false});
                                     }
+                                    console.log(this.state.auto_comment)
                                 }
                                 catch(e){}
                             }
@@ -295,7 +320,14 @@ class SmallInfo extends User{
                         />
                     </DataTable.Cell>
                     <DataTable.Cell style={{borderEndWidth:1, justifyContent:'center'}}>
-                        <Button title={"Action"}  onPress={()=> this.pushAction()}/>
+                        <Button title={
+                            this.state.action ?"Wait" :"Start"
+                        }  onPress={async()=>{
+                            await this.pushAction()
+                            await this.setState({action:false})
+
+                        }  }/>
+
                     </DataTable.Cell>
                 </DataTable.Row>
             </View>

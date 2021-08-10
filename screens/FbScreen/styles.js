@@ -8,7 +8,8 @@ import {
 const styles = StyleSheet.create({
     titleHeader:{
         borderRightWidth:1,
-        justifyContent:'center'
+        justifyContent:'center',
+        marginRight:3
     },
     bottom: {
     },
@@ -16,7 +17,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         elevation: 4,
         height:'50%',
-        width:'170%'
+        width:'170%',
     },
     sectionTwo:{
         marginTop:50,
